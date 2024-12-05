@@ -2,3 +2,5 @@ venv
 untracked
 .env
 __pycache__
+target
+config.yaml
