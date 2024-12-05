@@ -8,7 +8,6 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct MqttProducer {
     client: Client,
-    config: MqttConfig,
 }
 
 impl MqttProducer {
@@ -23,12 +22,12 @@ impl MqttProducer {
         let (client, mut connection) = Client::new(mqtt_options, 10);
 
         thread::spawn(move || {
-            for notification in connection.iter() {
+            for _notification in connection.iter() {
                 //println!("Producer Event: {:?}", notification);
             }
         });
 
-        Ok(MqttProducer { client, config })
+        Ok(MqttProducer { client })
     }
 
     pub fn publish<T: Serialize>(

@@ -26,6 +26,15 @@ pub struct MqttConfig {
     pub keep_alive_secs: u64,
     #[serde(default = "default_reconnect_interval")]
     pub reconnect_interval_secs: u64,
+    pub task_topic: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MonitorConfig {
+    pub main_topic: String,
+    pub ping_consumer: String,
+    pub ping_producer: String,
+    pub producer_delay: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -39,6 +48,7 @@ pub struct LogConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
     pub mqtt: MqttConfig,
+    pub monitor: MonitorConfig,
     #[serde(default)]
     pub logging: LogConfig,
     #[serde(default = "default_update_interval")]
@@ -113,8 +123,10 @@ impl AppConfig {
         fs::write(path, yaml)?;
         Ok(())
     }
+}
 
-    pub fn default_config() -> Self {
+impl Default for AppConfig {
+    fn default() -> Self {
         AppConfig {
             mqtt: MqttConfig {
                 host: "localhost".to_string(),
@@ -124,12 +136,19 @@ impl AppConfig {
                 client_id: "rust-client".to_string(),
                 keep_alive_secs: default_keep_alive(),
                 reconnect_interval_secs: default_reconnect_interval(),
+                task_topic: "task_topic".to_string(),
             },
             logging: LogConfig {
                 level: default_log_level(),
                 file: default_log_file(),
             },
             update_interval_ms: default_update_interval(),
+            monitor: MonitorConfig {
+                main_topic: "monitor".to_string(),
+                ping_consumer: "ping".to_string(),
+                ping_producer: "pong".to_string(),
+                producer_delay: 4,
+            },
         }
     }
 }

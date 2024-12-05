@@ -1,34 +1,36 @@
-use crate::mqtt::*;
+use crate::custom_protocol::{CustomProtocol, ProtocolError};
 use rand::Rng;
 
 #[derive(Debug, Clone, PartialEq)]
-enum Gear {
+pub enum Gear {
     REVERSE,
     NEUTRAL,
     FORWARD(u8),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Pedal {
-    value: i8,
+pub enum Pedal {
+    GAS(i8),
+    BREAK(i8),
+    CLUTCH(i8),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CarState {
-    current_gear: Gear,
-    pbreak: Pedal,
-    pclutch: Pedal,
-    pgas: Pedal,
-    stearing_wheel_angle: i16,
+    pub current_gear: Gear,
+    pub pbreak: Pedal,
+    pub pclutch: Pedal,
+    pub pgas: Pedal,
+    pub stearing_wheel_angle: i16,
 }
 
 impl CarState {
     pub fn new() -> Self {
         CarState {
             current_gear: Gear::NEUTRAL,
-            pbreak: Pedal { value: 0 },
-            pclutch: Pedal { value: 0 },
-            pgas: Pedal { value: 0 },
+            pbreak: Pedal::BREAK(0),
+            pclutch: Pedal::CLUTCH(0),
+            pgas: Pedal::GAS(0),
             stearing_wheel_angle: 0,
         }
     }
@@ -36,61 +38,44 @@ impl CarState {
     pub fn generate_random() -> Self {
         let mut rng = rand::thread_rng();
 
-        // let random_gear = match rng.gen_range(0..=6) {
-        //     0 => Gear::REVERSE,
-        //     1 => Gear::NEUTRAL,
-        //     n => Gear::FORWARD(n as u8 - 1),
-        // };
+        let random_gear = match rng.gen_range(0..=6) {
+            0 => Gear::REVERSE,
+            1 => Gear::NEUTRAL,
+            n => Gear::FORWARD(n as u8 - 1),
+        };
 
         CarState {
-            current_gear: Gear::NEUTRAL,
-            pbreak: Pedal {
-                value: rng.gen_range(-2..=2),
-            },
-            pclutch: Pedal {
-                value: rng.gen_range(-2..=2),
-            },
-            pgas: Pedal {
-                value: rng.gen_range(-2..=2),
-            },
+            current_gear: random_gear,
+            pbreak: Pedal::BREAK(rng.gen_range(-2..=2)),
+            pclutch: Pedal::CLUTCH(rng.gen_range(-2..=2)),
+            pgas: Pedal::GAS(rng.gen_range(-2..=2)),
             stearing_wheel_angle: rng.gen_range(-2..=2),
         }
     }
 
-    pub fn get_changes(&self, previous: &Self) -> Vec<String> {
+    pub fn get_changes(
+        &self,
+        previous: &Self,
+        protocol: &CustomProtocol,
+    ) -> Result<Vec<Vec<u8>>, ProtocolError> {
         let mut changes = Vec::new();
 
         if self.current_gear != previous.current_gear {
-            changes.push(format!(
-                "gear: {:?} -> {:?}",
-                previous.current_gear, self.current_gear
-            ));
+            changes.push(protocol.encode_gear(&self.current_gear)?);
         }
         if self.pbreak != previous.pbreak {
-            changes.push(format!(
-                "break: {} -> {}",
-                previous.pbreak.value, self.pbreak.value
-            ));
+            changes.push(protocol.encode_pedal(&self.pbreak)?);
         }
         if self.pclutch != previous.pclutch {
-            changes.push(format!(
-                "clutch: {} -> {}",
-                previous.pclutch.value, self.pclutch.value
-            ));
+            changes.push(protocol.encode_pedal(&self.pclutch)?);
         }
         if self.pgas != previous.pgas {
-            changes.push(format!(
-                "gas: {} -> {}",
-                previous.pgas.value, self.pgas.value
-            ));
+            changes.push(protocol.encode_pedal(&self.pgas)?);
         }
         if self.stearing_wheel_angle != previous.stearing_wheel_angle {
-            changes.push(format!(
-                "wheel: {} -> {}",
-                previous.stearing_wheel_angle, self.stearing_wheel_angle
-            ));
+            changes.push(protocol.encode_steering(self.stearing_wheel_angle)?);
         }
 
-        changes
+        Ok(changes)
     }
 }

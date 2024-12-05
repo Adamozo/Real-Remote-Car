@@ -1,15 +1,16 @@
-use std::error::Error;
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use crate::config::AppConfig;
 use crate::mqtt::consumer::MqttConsumer;
+use crate::mqtt::producer::MqttProducer;
+use std::sync::Arc;
+use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-pub async fn ping(config: AppConfig) -> Result<(), Box<dyn Error>> {
-    let mut consumer = MqttConsumer::new(config.mqtt).unwrap();
-    consumer.subscribe("car/ping").unwrap();
+pub fn ping_consumer(config: Arc<AppConfig>) {
+    let mut consumer = MqttConsumer::new(config.mqtt.clone()).unwrap();
+    consumer.subscribe(&config.monitor.ping_consumer).unwrap();
 
     loop {
-        if let Some(msg) = consumer.try_next().await.unwrap() {
+        if let Some(msg) = consumer.try_next().unwrap() {
             let current_timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -20,7 +21,24 @@ pub async fn ping(config: AppConfig) -> Result<(), Box<dyn Error>> {
                 .unwrap();
 
             let diff_ms = current_timestamp - msg_timestamp;
-            println!("Różnica: {}ms", diff_ms);
+            println!("Delay: {}ms", diff_ms);
+        }
+    }
+}
+
+pub fn ping_producer(config: Arc<AppConfig>) {
+    let mut producer = MqttProducer::new(config.mqtt.clone()).unwrap();
+
+    loop {
+        std::thread::sleep(Duration::from_secs(config.monitor.producer_delay));
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        if let Err(e) = producer.publish(&config.monitor.ping_producer, &timestamp) {
+            eprintln!("Unable to send message: {}", e);
         }
     }
 }

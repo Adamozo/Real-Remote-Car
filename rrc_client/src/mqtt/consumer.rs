@@ -7,7 +7,6 @@ use tokio::sync::mpsc::{self, Receiver};
 
 pub struct MqttConsumer {
     client: Client,
-    config: MqttConfig,
     receiver: Receiver<Publish>,
 }
 
@@ -30,12 +29,11 @@ impl MqttConsumer {
 
         thread::spawn(move || {
             for notification in connection.iter() {
-                // println!("Consumer Event: {:?}", notification);
                 if let Ok(notification) = notification {
                     if let rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) =
                         notification
                     {
-                        //println!("Received: topic: {}", publish.topic);
+                        // println!("Received: topic: {}", publish.topic);
 
                         if sender.blocking_send(publish).is_err() {
                             eprintln!("Receiver dropped, ending consumer thread");
@@ -46,11 +44,7 @@ impl MqttConsumer {
             }
         });
 
-        Ok(MqttConsumer {
-            client,
-            config,
-            receiver,
-        })
+        Ok(MqttConsumer { client, receiver })
     }
 
     pub fn subscribe(&mut self, topic: &str) -> Result<(), Box<dyn Error>> {
@@ -58,7 +52,7 @@ impl MqttConsumer {
         Ok(())
     }
 
-    pub async fn try_next(&mut self) -> Result<Option<Publish>, Box<dyn Error>> {
+    pub fn try_next(&mut self) -> Result<Option<Publish>, Box<dyn Error>> {
         match self.receiver.try_recv() {
             Ok(publish) => Ok(Some(publish)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
@@ -66,12 +60,5 @@ impl MqttConsumer {
                 Err("MQTT consumer channel disconnected".into())
             }
         }
-    }
-
-    pub async fn next(&mut self) -> Result<Publish, Box<dyn Error>> {
-        self.receiver
-            .recv()
-            .await
-            .ok_or_else(|| "MQTT consumer channel disconnected".into())
     }
 }

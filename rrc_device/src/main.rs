@@ -1,40 +1,36 @@
 mod config;
+mod message_pass;
+mod monitor;
 mod mqtt;
 use crate::config::AppConfig;
-use crate::mqtt::producer::MqttProducer;
-use std::error::Error;
-use std::time::Duration;
-use tokio::time;
+use crate::message_pass::message_consumer;
+use crate::monitor::{ping_consumer, ping_producer};
+use std::sync::Arc;
+use std::thread;
 
-use tokio::{self};
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = Arc::new(AppConfig::load("config.yaml")?);
 
-pub async fn ping(config: AppConfig) -> Result<(), Box<dyn Error>> {
-    let mut producer = MqttProducer::new(config.mqtt.clone())?;
+    let mut handles = vec![];
 
-    let ping_sender = tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_secs(4));
+    handles.push(thread::spawn({
+        let config = Arc::clone(&config);
+        move || ping_consumer(config)
+    }));
 
-        loop {
-            interval.tick().await;
+    handles.push(thread::spawn({
+        let config = Arc::clone(&config);
+        move || ping_producer(config)
+    }));
 
-            let timestamp = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64;
+    // handles.push(thread::spawn({
+    //     let config = Arc::clone(&config);
+    //     move || message_consumer(config)
+    // }));
 
-            if let Err(e) = producer.publish("car/ping", &timestamp) {
-                eprintln!("Błąd wysyłania pinga: {}", e);
-            }
-        }
-    });
-
-    tokio::try_join!(ping_sender)?;
+    // for handle in handles {
+    //     handle.join().expect("Thread panicked")?;
+    // }
 
     Ok(())
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = AppConfig::load("config.yaml")?;
-    ping(config).await
 }
