@@ -1,4 +1,4 @@
-use crate::car_state::{Gear, Pedal};
+use crate::car_state::{Gear, IgnitionState, Pedal};
 
 #[derive(Debug, Clone)]
 pub enum ProtocolVersion {
@@ -17,6 +17,8 @@ pub trait ProtocolEncoder {
     fn encode_gear(&self, gear: &Gear) -> Result<Vec<u8>, ProtocolError>;
     fn encode_pedal(&self, pedal: &Pedal) -> Result<Vec<u8>, ProtocolError>;
     fn encode_steering(&self, angle: i16) -> Result<Vec<u8>, ProtocolError>;
+    fn encode_ignition(&self, state: &IgnitionState) -> Result<Vec<u8>, ProtocolError>;
+    fn encode_handbrake(&self, value: u8) -> Result<Vec<u8>, ProtocolError>;
 }
 
 // ------------------------
@@ -39,21 +41,11 @@ impl ProtocolEncoder for CustomProtocolV1 {
 
     fn encode_pedal(&self, pedal: &Pedal) -> Result<Vec<u8>, ProtocolError> {
         let coded_pedal = match pedal {
-            Pedal::BREAK(value) => format!(
-                "13{}{:03}",
-                if *value >= 0 { "+" } else { "-" },
-                value.abs()
-            ),
-            Pedal::GAS(value) => format!(
-                "12{}{:03}",
-                if *value >= 0 { "+" } else { "-" },
-                value.abs()
-            ),
-            Pedal::CLUTCH(value) => format!(
-                "14{}{:03}",
-                if *value >= 0 { "+" } else { "-" },
-                value.abs()
-            ),
+            Pedal::BREAK(value) => format!("13+{:03}", value),
+            Pedal::GAS(value) => format!("12+{:03}", value),
+            Pedal::CLUTCH(value) => {
+                format!("14+{:03}", value)
+            }
         };
 
         Ok(coded_pedal.as_bytes().to_vec())
@@ -65,6 +57,18 @@ impl ProtocolEncoder for CustomProtocolV1 {
                 .as_bytes()
                 .to_vec(),
         )
+    }
+
+    fn encode_ignition(&self, state: &IgnitionState) -> Result<Vec<u8>, ProtocolError> {
+        match state {
+            IgnitionState::OFF => Ok("10-1".as_bytes().to_vec()),
+            IgnitionState::NEUTRAL => Ok("10+0".as_bytes().to_vec()),
+            IgnitionState::ON => Ok("10+1".as_bytes().to_vec()),
+        }
+    }
+
+    fn encode_handbrake(&self, value: u8) -> Result<Vec<u8>, ProtocolError> {
+        Ok(format!("16+{:04}", value).as_bytes().to_vec())
     }
 }
 
@@ -93,5 +97,13 @@ impl CustomProtocol {
 
     pub fn encode_steering(&self, angle: i16) -> Result<Vec<u8>, ProtocolError> {
         self.encoder.encode_steering(angle)
+    }
+
+    pub fn encode_handbrake(&self, value: u8) -> Result<Vec<u8>, ProtocolError> {
+        self.encoder.encode_handbrake(value)
+    }
+
+    pub fn encode_ignition(&self, state: &IgnitionState) -> Result<Vec<u8>, ProtocolError> {
+        self.encoder.encode_ignition(&state)
     }
 }

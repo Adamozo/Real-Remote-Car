@@ -1,5 +1,6 @@
 mod car_state;
 mod config;
+mod controller;
 mod custom_protocol;
 mod monitor;
 mod mqtt;
@@ -12,5 +13,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = AppConfig::load("config.yaml")?;
 
     run_loop(config)?;
+
     Ok(())
 }
