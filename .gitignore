@@ -4,3 +4,4 @@ untracked
 __pycache__
 target
 config.yaml
+.vscode

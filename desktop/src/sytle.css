@@ -1,0 +1,126 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dashboard-container {
+  width: 100%;
+  height: 100vh;
+  padding: 10px;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.car-info-wrapper {
+  margin-top: auto;
+}
+
+.video-feed {
+  height: 100%;
+  padding: 0.5rem;
+}
+
+.container {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  background-color: #1a1a1a;
+  color: white;
+}
+
+.welcome-screen {
+  text-align: center;
+  margin-left: auto;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-right: auto;
+}
+
+.start-button {
+  padding: 10px 20px;
+  font-size: 1.2em;
+  background-color: #646cff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.start-button:hover {
+  background-color: #747bff;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  background-color: rgba(128, 128, 128, 0.3);
+  width: 100%;
+  padding: 10px;
+  align-self: flex-end;
+}
+
+.grid-cell {
+  padding: 15px;
+  text-align: center;
+  background-color: rgba(80, 80, 100, 0.7);
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-cell {
+  font-weight: bold;
+  background-color: rgba(60, 60, 80, 0.9);
+}
+
+.value-cell {
+  font-size: 1.2em;
+  color: #cccccc;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.video-stream {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stream-status {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.status-error {
+  background-color: rgba(255, 0, 0, 0.7);
+}
