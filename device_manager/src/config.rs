@@ -35,6 +35,7 @@ pub struct MonitorConfig {
     pub ping_consumer: String,
     pub ping_producer: String,
     pub producer_delay: u64,
+    pub disable_ping: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -117,12 +118,6 @@ impl AppConfig {
 
         Ok(())
     }
-
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), ConfigError> {
-        let yaml = serde_yaml::to_string(self)?;
-        fs::write(path, yaml)?;
-        Ok(())
-    }
 }
 
 impl Default for AppConfig {
@@ -148,6 +143,7 @@ impl Default for AppConfig {
                 ping_consumer: "ping".to_string(),
                 ping_producer: "pong".to_string(),
                 producer_delay: 4,
+                disable_ping: true,
             },
         }
     }

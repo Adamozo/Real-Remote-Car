@@ -8,11 +8,10 @@ use tokio::sync::mpsc::{self, Receiver};
 pub struct MqttConsumer {
     client: Client,
     receiver: Receiver<Publish>,
-    topic: String,
 }
 
 impl MqttConsumer {
-    pub fn new(config: MqttConfig, topic: String) -> Result<Self, Box<dyn Error>> {
+    pub fn new(config: MqttConfig) -> Result<Self, Box<dyn Error>> {
         let mut mqtt_options = MqttOptions::new(
             format!("{}-consumer", config.client_id),
             &config.host,
@@ -28,34 +27,28 @@ impl MqttConsumer {
 
         let (sender, receiver) = mpsc::channel(100);
 
-        let topic_clone = topic.clone();
         thread::spawn(move || {
             for notification in connection.iter() {
                 if let Ok(notification) = notification {
                     if let rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) =
                         notification
                     {
-                        if publish.topic == topic_clone {
-                            if sender.blocking_send(publish).is_err() {
-                                eprintln!("Receiver dropped, ending consumer thread");
-                                break;
-                            }
+                        // println!("Received: topic: {}", publish.topic);
+
+                        if sender.blocking_send(publish).is_err() {
+                            eprintln!("Receiver dropped, ending consumer thread");
+                            break;
                         }
                     }
                 }
             }
         });
 
-        Ok(MqttConsumer {
-            client,
-            receiver,
-            topic,
-        })
+        Ok(MqttConsumer { client, receiver })
     }
 
-    pub fn subscribe(&mut self) -> Result<(), Box<dyn Error>> {
-        self.client
-            .subscribe(self.topic.clone(), QoS::AtLeastOnce)?;
+    pub fn subscribe(&mut self, topic: &str) -> Result<(), Box<dyn Error>> {
+        self.client.subscribe(topic, QoS::AtLeastOnce)?;
         Ok(())
     }
 

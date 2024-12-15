@@ -1,5 +1,5 @@
 [package]
-name = "rrc_device"
+name = "device_manager"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,4 @@ serde_json = "1.0"
 chrono = "0.4"
 serde_yaml = "0.9"
 thiserror = "2.0"
+serialport = "4.2"
